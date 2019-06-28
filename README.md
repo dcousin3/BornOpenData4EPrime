@@ -1,4 +1,4 @@
-# BornOpen4EPrime
+# BornOpenData for EPrime
 
 This repository contains a BornOpenData package that implements a protocole that runs within E-Prime 2.0.10.
 
