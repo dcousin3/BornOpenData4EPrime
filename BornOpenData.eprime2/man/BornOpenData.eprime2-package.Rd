@@ -6,7 +6,7 @@
 \alias{BornOpenData.eprime2-package}
 \title{BornOpenData.eprime2}
 \description{
-This package is to read data stored as BornOpenData by E-Prime
+This package has a function to read data stored as BornOpenData by E-Prime
 when complemented with the package BornOpenData4EPrime.
 }
 \details{

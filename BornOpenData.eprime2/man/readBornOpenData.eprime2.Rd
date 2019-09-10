@@ -4,15 +4,17 @@
 \alias{readBornOpenData.eprime2}
 \title{readBornOpenData.eprime2}
 \usage{
-readBornOpenData.eprime2(owner, repository)
+readBornOpenData.eprime2(owner, repository, verbose = FALSE)
 }
 \arguments{
 \item{owner}{is the GitHub member who created the repository}
 
 \item{repository}{is the name of the repository on GitHub}
+
+\item{verbose}{= TRUE displays complementary information.}
 }
 \value{
-the data of all participants x session in a data.frame
+the data of all participants, all sessions in a data.frame
 }
 \description{
 This function reads data from E-Prime stored on GitHub
