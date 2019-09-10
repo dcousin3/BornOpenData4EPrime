@@ -9,6 +9,5 @@ The full report will be available soon.
 If you find issues with the package, send a notification to Denis Cousineau.
 
 Denis Cousineau   (dcousin3) denis.cousineau@uottawa.ca
-and 
-Isabelle Charbonneau (IzzaCharbo)
+
           
