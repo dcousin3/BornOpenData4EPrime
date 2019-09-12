@@ -10,5 +10,5 @@ Cousineau, D. (submitted) Born Open Data for E-Prime.
 
 You can install this library on you computer if the library devtools is installed with:
 
-devtools::install_github("dcousin3/BornOpenData.eprime2")
-library(BornOpenData.eprime2)
+devtools::install_github("dcousin3/BornOpenData4EPrime/BornOpenData.eprime2")<br>
+library(BornOpenData.eprime2)<br>
