@@ -7,12 +7,13 @@
 #' an internet connection must be effective.
 #'
 #' @usage
-#' readBornOpenData.eprime2(owner, repository)
+#' readBornOpenData.eprime2(owner, repository, verbose = FALSE)
 #'
 #' @param owner is the GitHub member who created the repository
 #' @param repository is the name of the repository on GitHub
+#' @param verbose = TRUE displays complementary information.
 #'
-#' @return            the data of all participants x session in a data.frame
+#' @return the data of all participants, all sessions in a data.frame
 #'
 #' @details
 #'
@@ -32,6 +33,7 @@
 #' @import rprime
 #' @import plyr
 #'
+#' @export
 
 # the main function
 readBornOpenData.eprime2 <- function(
@@ -47,13 +49,13 @@ readBornOpenData.eprime2 <- function(
     ## 1- gettting subjectslog.txt for exp name, subjects, sessions 
     verboseprint(paste("Repository is https://github.com",owner, repository, sep="/"), verbose)
     repo <- paste("https://github.com/", owner, repository, "raw/master", sep = "/")
-    
+
     verboseprint("Fetching subjectsLog.txt...", verbose)
     file0 <- "subjectsLog.txt"
     myurl0  <- paste(repo, file0, sep="/")
-     
+
     synopsis <- html_text(read_html(myurl0))
-    synopsis <- as.data.frame(matrix(strsplit(synopsis, "\n|\t")[[1]], ncol=6, byrow=T))
+    synopsis <- read.table(text = synopsis)
     allfiles <-paste(synopsis$V1,synopsis$V2,synopsis$V3, sep = "-")
     verboseprint(paste("Found Experiments:", paste(unique(synopsis$V1),collapse=", ") , sep = " "), verbose)
     verboseprint(paste("  with subject numbers:", paste(unique(synopsis$V2),collapse=", "), sep = " "), verbose)
@@ -112,13 +114,11 @@ readBornOpenData.eprime2 <- function(
     ## 4- merging the individual-subjects data.frame into a master data.frame
     plyr::rbind.fill(alldata)
 }
-#' @export
 
 
 # a small function to facilitate the display of feedback
 verboseprint <- function(msg, verbose) {
-  if (verbose == TRUE) 
+  if (verbose == TRUE) {
     cat(msg)
     cat("\n")
-}
-#' @noexport
+} }
