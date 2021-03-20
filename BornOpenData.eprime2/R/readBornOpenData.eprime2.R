@@ -27,7 +27,7 @@
 #' # that this user and this repository exists.
 #'
 #' # This will read all the data files (stored in the rawdata folder):
-#' readBornOpenData.eprime2("VIC-Laboratory-ExperimentalData","Test")
+#' dta <- readBornOpenData.eprime2("VIC-Laboratory-ExperimentalData","Test")
 #'
 #' @import rvest
 #' @import rprime
@@ -39,16 +39,17 @@
 readBornOpenData.eprime2 <- function(
     owner,
     repository,
+    branch = "master",
     verbose = FALSE
 ) {
     ## 0- required library
-    require(rvest)
-    require(rprime)
-    require(plyr)
+    require(rvest)      # for read_html, html_text
+    require(rprime)     # for FrameList, keep_levels, to_data_frame
+    require(data.table) # for rbindlist, setnames
 
     ## 1- gettting subjectslog.txt for exp name, subjects, sessions 
     verboseprint(paste("Repository is https://github.com",owner, repository, sep="/"), verbose)
-    repo <- paste("https://github.com/", owner, repository, "raw/master", sep = "/")
+    repo <- paste("https://github.com/", owner, repository, "raw", branch, sep = "/")
 
     verboseprint("Fetching subjectsLog.txt...", verbose)
     file0 <- "subjectsLog.txt"
@@ -57,13 +58,14 @@ readBornOpenData.eprime2 <- function(
     synopsis <- html_text(read_html(myurl0))
     synopsis <- read.table(text = synopsis)
     allfiles <-paste(synopsis$V1,synopsis$V2,synopsis$V3, sep = "-")
+
     verboseprint(paste("Found Experiments:", paste(unique(synopsis$V1),collapse=", ") , sep = " "), verbose)
-    verboseprint(paste("  with subject numbers:", paste(unique(synopsis$V2),collapse=", "), sep = " "), verbose)
-    verboseprint(paste("  and session numbers: ", paste(unique(synopsis$V3),collapse=", "), sep = " "), verbose)
+    verboseprint(paste("  with subject numbers:", paste(synopsis$V2,collapse=", "), sep = " "), verbose)
+    verboseprint(paste("  and session numbers: ", paste(synopsis$V3,collapse=", "), sep = " "), verbose)
 
     ## 2- preparing a list of data.frame, one per participant x session
-    alldata = list()
-    i= 1
+    alldata <- list()
+    index   <- 1
 
     ## 3- reading all the files one-by-one
     for (file in allfiles) {
@@ -73,46 +75,73 @@ readBornOpenData.eprime2 <- function(
         ecnt <- html_text(read_html(dtafle))
 
         ## 3.2- cutting ecnt at every \r\n into a vector of strings
+        # (instead of writing to a temp file then read with eprime_read which can't read over the web)
         elog     <- strsplit(ecnt, "\r\n")[[1]]
         clk_line <- pmatch("Clock.Information: ", elog)
         elog     <- elog[!(1:length(elog)==clk_line)]
-        # these two lines needed?
+        # these two lines needed
         attr(elog, "basename") <- file
         class(elog) <- c("EprimeLines", "character")
 
         ## 3.3- breaking down the text files into "layers" of informations with rprime functions
         elist  <- FrameList(elog)
         level1 <- keep_levels(elist, 1)
-        edf1   <- to_data_frame(level1)
-        level2 <- keep_levels(elist, 2)
-        edf2   <- to_data_frame(level2)
+        level2 <- keep_levels(elist, 2) # there are   6 lines
+        level3 <- keep_levels(elist, 3) # there are 648 lines
 
         ## 3.4- removing from level 1 some unneeded information
-        edf1b <- apply(edf1, 2, min, na.rm = TRUE)
-        edf1c <- subset(data.frame(t(edf1b)), 
-            select = -c(Eprime.Level, Eprime.LevelName, Eprime.Basename, Eprime.FrameNumber,
-            Procedure, Running, VersionPersist, LevelName)
-        )
+        # note that level 1 is always two lines (pre-initialiation and post-experiment)
+        level1    <- modifyList( level1[[2]], level1[[1]] ) # merge the two lines
+        level1_df <- clean_data_frame(to_data_frame(level1),"Experiment")
 
-        ## 3.5- removing from level 2 some unneeded information
-        edf2c <- subset(edf2, 
-            select = -c(Eprime.Level, Eprime.Basename, Eprime.FrameNumber)
-        )
 
-        ## 3.6- getting the number of trials in level2 information
-        ntrials <- dim(edf2c)[1]
-        ncolumns <- length(edf1c)
+        if (length(keep_levels(elist, 2)) == 0) {
+            # this experiment has only 1 layer?? nothing to do
+            res = level1_df
 
-        ## 3.7- replicating edf1c ntrials times
-        edf1c[2:ntrials, 1:ncolumns] <- edf1c
+        } else if (length(keep_levels(elist, 3)) == 0) {
+            # this experiment has only 2 layers
+            level1_df[2:length(level2), ] <- level1_df
 
-        ## 3.8- concatenating level-1 and level-2 information
-        alldata[[i]] <- cbind(edf1c, edf2c)  
-        i <- i+1
+            level2_df <- clean_data_frame(to_data_frame(level2),"Block")
+            level12_df <- cbind(level1_df, level2_df)
+
+            res <-  level12_df
+
+        } else if (length(keep_levels(elist, 4)) == 0) {
+            # this experiment has 3 layers
+            level1_df[2:length(level3), ] <- level1_df
+
+            level2_df <- clean_data_frame(to_data_frame(level2),"Block")
+            level3_df <- clean_data_frame(to_data_frame(level3),"Trial")
+
+            # get the number of trials in each level-2 blocks
+            nt <- as.integer(level2[[1]]$Eprime.FrameNumber)-2
+            for (i in 2:6) (nt[i] <- as.integer(level2[[i]]$Eprime.FrameNumber) - 
+                as.integer(level2[[i-1]]$Eprime.FrameNumber)-1)
+
+            # get the level 2 expanded by nt
+            level2_ex <- level2_df[0,]
+            for (i in 1:length(nt) ) {
+              level2_ex[ (nrow(level2_ex )+1):(nrow(level2_ex )+nt[i]), ] = level2_df[i,]
+            }
+
+            level123_df <- cbind(level1_df, level2_ex, level3_df)
+            res <-  level123_df
+
+        } else {
+            # this experiment has 4 layers or more
+            verboseprint("   watchout! 4 levels or more are present; for exporting level 4 and beyond for this version contact the author", verbose)
+        }
+
+        ## 3.8- keep the file
+        alldata[[index]] <-  res
+        index <- index + 1
     }
 
     ## 4- merging the individual-subjects data.frame into a master data.frame
-    plyr::rbind.fill(alldata)
+    res <- data.table::rbindlist(alldata, fill = TRUE, use.names = TRUE)
+    res
 }
 
 
@@ -122,3 +151,23 @@ verboseprint <- function(msg, verbose) {
     cat(msg)
     cat("\n")
 } }
+
+
+clean_data_frame <- function(df, post) {
+    # change names to duplicate names
+    res <- setnames(df, 
+        old = c('Procedure','Running'),
+        new = c(paste('Procedure',post,sep="."),paste('Running',post,sep="."))
+    )
+    # remove unneeded columns
+    res <- subset(data.frame(res), 
+        select = -c(Eprime.Level, Eprime.LevelName, Eprime.Basename, Eprime.FrameNumber)
+    )
+    res
+}
+
+
+
+
+
+

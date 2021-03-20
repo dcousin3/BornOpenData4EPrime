@@ -1,16 +1,16 @@
-Package:        BornOpenData.eprime2
-Type:           Package
-Title:          Born Open Data for E-Prime
-Description:    This function reads data from E-Prime stored by BornOpenData4Eprime on GitHub.
-Version:        0.9.1
-Date:           2019-09-09
-License:        GPL-3
-Author:         Denis Cousineau <denis.cousineau@uottawa.ca>
-Maintainer:     Denis Cousineau <denis.cousineau@uottawa.ca>
-Depends:        R (>= 3.0.0)
-Encoding:       UTF-8
-LazyData:       true
-RoxygenNote:    6.1.1
+Package: BornOpenData.eprime2
+Type: Package
+Title: Born Open Data for E-Prime
+Description: This function reads data from E-Prime stored by BornOpenData4Eprime on GitHub.
+Version: 0.9.1
+Date: 2019-09-09
+License: GPL-3
+Author: Denis Cousineau <denis.cousineau@uottawa.ca>
+Maintainer: Denis Cousineau <denis.cousineau@uottawa.ca>
+Depends: R (>= 3.0.0)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
 Imports: 
     rvest   (>= 0.3.4), 
     xml2    (>= 0.0.0), 

@@ -32,7 +32,7 @@ an internet connection must be effective.
 # that this user and this repository exists.
 
 # This will read all the data files (stored in the rawdata folder):
-readBornOpenData.eprime2("VIC-Laboratory-ExperimentalData","Test")
+dta <- readBornOpenData.eprime2("VIC-Laboratory-ExperimentalData","Test")
 
 }
 \author{
